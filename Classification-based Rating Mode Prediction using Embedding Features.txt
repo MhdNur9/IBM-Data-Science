@@ -1,0 +1,113 @@
+!pip install scikit-learn==1.0.2
+# also set a random state
+rs = 123
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+rating_url = "https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBM-ML321EN-SkillsNetwork/labs/datasets/ratings.csv"
+user_emb_url = "https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBM-ML321EN-SkillsNetwork/labs/datasets/user_embeddings.csv"
+item_emb_url = "https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBM-ML321EN-SkillsNetwork/labs/datasets/course_embeddings.csv"
+
+rating_df = pd.read_csv(rating_url)
+rating_df.head()
+
+user_emb = pd.read_csv(user_emb_url)
+item_emb = pd.read_csv(item_emb_url)
+user_emb.head()
+item_emb.head()
+# Merge user embedding features
+merged_df = pd.merge(rating_df, user_emb, how='left', left_on='user', right_on='user').fillna(0)
+# Merge course embedding features
+merged_df = pd.merge(merged_df, item_emb, how='left', left_on='item', right_on='item').fillna(0)
+merged_df.head()
+u_feautres = [f"UFeature{i}" for i in range(16)]
+c_features = [f"CFeature{i}" for i in range(16)]
+
+user_embeddings = merged_df[u_feautres]
+course_embeddings = merged_df[c_features]
+ratings = merged_df['rating']
+
+# Aggregate the two feature columns using element-wise add
+interaction_dataset = user_embeddings + course_embeddings.values
+interaction_dataset.columns = [f"Feature{i}" for i in range(16)]
+interaction_dataset['rating'] = ratings
+interaction_dataset.head()
+X = interaction_dataset.iloc[:, :-1]
+y_raw = interaction_dataset.iloc[:, -1]
+
+label_encoder = LabelEncoder()
+y = label_encoder.fit_transform(y_raw.values.ravel())
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=rs)
+print(f"Input data shape: {X.shape}, Output data shape: {y.shape}")
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+from sklearn.ensemble import BaggingClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import roc_auc_score
+# WRITE YOUR CODE HERE
+# You may need to tune the hyperparameters of the models
+models = [LogisticRegression(random_state=rs),
+          DecisionTreeClassifier(random_state=rs),
+          SVC(gamma='auto', random_state=rs),
+          BaggingClassifier(base_estimator=SVC(),
+                            n_estimators=10, random_state=rs),
+          GradientBoostingClassifier(
+              n_estimators=100, learning_rate=1.0, max_depth=1, random_state=rs)
+          ]
+
+names = [
+    'LogisticRegression',
+    'DecisionTreeClassifier',
+    'SVC',
+    'BaggingClassifier',
+    'GradientBoostingClassifier'
+]
+# WRITE YOUR CODE HERE
+# The main evaluation metrics could be accuracy, recall, precision, F score, and AUC.
+accuracy = []
+recall = []
+precision = []
+f_score = []
+auc = []
+
+for i in range(len(models)):
+    clf = models[i].fit(X_train, y_train)
+    y_pred = models[i].predict(X_test)
+    mean_acc = clf.score(X_test, y_test)
+    accuracy.append(mean_acc)
+    p, r, fbeta_score, _ = precision_recall_fscore_support(
+        y_test, y_pred, average=None, labels=[1])
+    precision.append(p[0])
+    recall.append(r[0])
+    f_score.append(fbeta_score[0])
+    a = roc_auc_score(y_test, y_pred)
+    auc.append(a)
+    print(f'{names[i]} -> mean accuracy: {mean_acc} precision: {p[0]} recall: {r[0]} f_score: {fbeta_score[0]} auc: {a}')
+import matplotlib.pyplot as plt
+
+plt.plot(names, accuracy)
+plt.title('Model Vs Accuracy')
+plt.xlabel('Model')
+plt.ylabel('Accuracy')
+plt.show()
+plt.plot(names, auc)
+plt.title('Model Vs AUC')
+plt.xlabel('Model')
+plt.ylabel('AUC')
+plt.show()
+plt.plot(names, f_score)
+plt.title('Model Vs F1-score')
+plt.xlabel('Model')
+plt.ylabel('F1-score')
+plt.show()
+
+
+
+
+

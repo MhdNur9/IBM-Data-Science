@@ -1,0 +1,186 @@
+!pip install scikit-learn==1.0.2
+!pip install seaborn==0.11.1
+import seaborn as sns
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
+%matplotlib inline
+# also set a random state
+rs = 123
+user_profile_url = "https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBM-ML321EN-SkillsNetwork/labs/datasets/user_profile.csv"
+user_profile_df = pd.read_csv(user_profile_url)
+user_profile_df.head()
+user_profile_df.shape
+feature_names = list(user_profile_df.columns[1:])
+feature_names
+user_profile_df.describe()
+# Use StandardScaler to make each feature with mean 0, standard deviation 1
+scaler = StandardScaler()
+user_profile_df[feature_names] = scaler.fit_transform(user_profile_df[feature_names])
+print("mean {} and standard deviation{} ".format(user_profile_df[feature_names].mean(),user_profile_df[feature_names].std()))
+user_profile_df.describe()
+features = user_profile_df.loc[:, user_profile_df.columns != 'user']
+features
+user_ids = user_profile_df.loc[:, user_profile_df.columns == 'user']
+user_ids
+# WRITE YOUR CODE HERE
+from sklearn.cluster import KMeans
+from matplotlib import pyplot as plt
+# WRITE YOUR CODE HERE
+
+# Find an optimized number of neighors k from a candidate list such as list_k = list(range(1, 30))
+from sklearn.cluster import KMeans
+from matplotlib import pyplot as plt
+
+distorsions = []
+for k in range(1, 30):
+    kmeans = KMeans(n_clusters=k)
+    kmeans.fit(features)
+    distorsions.append(kmeans.inertia_)
+
+fig = plt.figure(figsize=(15, 5))
+plt.plot(range(1, 30), distorsions)
+plt.grid(True)
+plt.title('Elbow curve')
+# Find an optimized number of neighors k from a candidate list such as list_k = list(range(1, 30))
+
+cluster_labels = kmeans.labels_
+cluster_labels.shape
+## WRITE YOUR CODE HERE
+def combine_cluster_labels(user_ids, labels):
+    labels_df = pd.DataFrame(labels)
+    cluster_df = pd.merge(user_ids, labels_df, left_index=True, right_index=True)
+    cluster_df.columns = ['user', 'cluster']
+    return cluster_df
+## ...
+## cluster_labels = model.labels
+## ...
+
+combine_cluster_labels(user_ids, cluster_labels)
+
+
+features = user_profile_df.loc[:, user_profile_df.columns != 'user']
+user_ids = user_profile_df.loc[:, user_profile_df.columns == 'user']
+feature_names = list(user_profile_df.columns[1:])
+print(f"There are {len(feature_names)} features for each user profile.")
+sns.set_theme(style="white")
+
+# Compute the correlation matrix
+corr = features.cov()
+
+# Generate a mask for the upper triangle
+mask = np.triu(np.ones_like(corr, dtype=bool))
+
+# Set up the matplotlib figure
+f, ax = plt.subplots(figsize=(11, 9))
+
+# Generate a custom diverging colormap
+cmap = sns.diverging_palette(230, 20, as_cmap=True)
+
+# Draw the heatmap with the mask and correct aspect ratio
+sns.heatmap(corr, mask=mask, cmap=cmap, vmax=.3, center=0,
+            square=True, linewidths=.5, cbar_kws={"shrink": .5})
+
+
+plt.show()
+# WRITE YOUR CODE HERE
+
+from sklearn.decomposition import PCA
+# WRITE YOUR CODE HERE
+
+# - For a list of candidate `n_components` arguments such as 1 to 14, find out the minimal `n` that can explain accumulated 90% variances of previous data
+# - In the fitted PCA() model, you can find explained_variance_ratio_ and use the sum() function to add them to get the accumulated variance ratio
+accVarRatio = []
+
+for n_components in range(1, 15):
+    pca = PCA(n_components=n_components)
+    pca.fit(features)
+
+    print(pca.explained_variance_ratio_.sum())
+    print(pca.singular_values_)
+
+    accVarRatio.append(pca.explained_variance_ratio_.sum())
+# - For a list of candidate `n_components` arguments such as 1 to 14, find out the minimal `n` that can explain accumulated 90% variances of previous data
+# - In the fitted PCA() model, you can find explained_variance_ratio_ and use the sum() function to add them to get the accumulated variance ratio
+
+plot_df = pd.DataFrame({'n_component': range(1, 15), 'accumulated variance ratio': accVarRatio})
+sns.barplot(x='n_component', y='accumulated variance ratio', data=plot_df)
+# WRITE YOUR CODE HERE
+
+# - For a list of candidate `n_components` arguments such as 1 to 14, find out the minimal `n` that can explain accumulated 90% variances of previous data
+# - In the fitted PCA() model, you can find explained_variance_ratio_ and use the sum() function to add them to get the accumulated variance ratio
+# - Merge the user ids and transformed features into a new dataframe
+for i in range(len(accVarRatio)):
+    if accVarRatio[i] > 0.9:
+        print(i)
+# We select n_component = 8, due to the minimal ratio > 0.9
+pca = PCA(n_components=9)
+pca.fit(features)
+transformed_features = pca.transform(features)
+print(transformed_features)
+new_df = pd.DataFrame(transformed_features)
+new_df
+
+new_df.insert(0, "user", user_ids, True)
+
+new_df
+new_df. columns = ['user'] + [f'PC{i}' for i in range(9)]
+new_df
+## WRITE YOUR CODE HERE
+
+## - Apply KMeans() on the PCA features
+## - Obtain the cluster label lists from model.labels_ attribute
+## - Assign each user a cluster label by combining user ids and cluster labels
+distorsions = []
+for k in range(1, 30):
+    kmeans = KMeans(n_clusters=k)
+    kmeans.fit(transformed_features)
+    distorsions.append(kmeans.inertia_)
+fig = plt.figure(figsize=(15, 5))
+plt.plot(range(1, 30), distorsions)
+plt.grid(True)
+plt.title('Elbow curve')
+kmeans = KMeans(n_clusters=25)
+kmeans.fit(transformed_features)
+cluster_labels = kmeans.labels_
+cluster_labels.shape
+cluster_df = combine_cluster_labels(user_ids, cluster_labels)
+cluster_df
+test_user_url = "https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBM-ML321EN-SkillsNetwork/labs/datasets/rs_content_test.csv"
+test_users_df = pd.read_csv(test_user_url)[['user', 'item']]
+test_users_df.head()
+test_users_labelled = pd.merge(test_users_df, cluster_df, left_on='user', right_on='user')
+test_users_labelled
+courses_cluster = test_users_labelled[['item', 'cluster']]
+courses_cluster['count'] = [1] * len(courses_cluster)
+count_enrollments_df = courses_cluster.groupby(['cluster','item']).agg(enrollments = ('count','sum')).reset_index()
+count_enrollments_df
+count_enrollments_df['item'].values
+## WRITE YOUR CODE HERE
+
+## - For each user, first finds its cluster label
+
+    ## - First get all courses belonging to the same cluster and figure out what are the popular ones (such as course enrollments beyond a threshold like 100)
+    
+    ## - Get the user's current enrolled courses
+    
+    ## - Check if there are any courses on the popular course list which are new/unseen to the user. 
+    
+    ## If yes, make those unseen and popular courses as recommendation results for the user
+popular_courses_by_cluster = {}
+for i in range(25):
+    tmp_df = count_enrollments_df[count_enrollments_df['cluster']==i]
+    tmp_df.sort_values(by=['enrollments'], ascending=False, inplace=True)
+    popular_courses_by_cluster[i] = tmp_df['item'].values[:3]
+    print(f'user in cluster {i} will be sugessted 3 courses as {popular_courses_by_cluster[i]}')
+    
+for index, row in test_users_labelled.iterrows():
+    user = row['user']
+    cluster = row['cluster']
+    print(f'user {user} in cluster {cluster} is recommened 3 courses as {popular_courses_by_cluster[cluster][:3]}')
+

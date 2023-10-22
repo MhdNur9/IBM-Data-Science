@@ -1,0 +1,7 @@
+numpy
+pandas
+scikit-learn
+scikit-surprise
+tensorflow
+streamlit
+streamlit-aggrid

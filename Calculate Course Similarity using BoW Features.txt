@@ -1,0 +1,99 @@
+!pip install nltk==3.6.7
+!pip install gensim==4.1.2
+import seaborn as sns
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+import gensim
+import pandas as pd
+import nltk as nltk
+
+from scipy.spatial.distance import cosine
+from scipy.spatial.distance import euclidean
+from scipy.spatial.distance import jaccard
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk import ngrams
+from gensim import corpora
+
+%matplotlib inline
+# also set a random state
+rs = 123
+course1 = "machine learning for everyone"
+course2 = "machine learning for beginners"
+tokens = set(course1.split() + course2.split())
+tokens = list(tokens)
+tokens
+def generate_sparse_bow(course):
+    bow_vector = []
+    words = course.split()
+    for token in tokens:
+        if token in words:
+            bow_vector.append(1)
+        else:
+            bow_vector.append(0)
+    return bow_vector
+bow1 = generate_sparse_bow(course1)
+bow1
+bow2 = generate_sparse_bow(course2)
+bow2
+cos_sim = 1 - cosine(bow1, bow2)
+print(f"The cosine similarity between course `{course1}` and course `{course2}` is {round(cos_sim, 2) * 100}%")
+# WRITE YOUR CODE HERE
+jaccard(bow1, bow2)
+
+# WRITE YOUR CODE HERE
+euclidean(bow1, bow2)
+# Load the BoW features as Pandas dataframe
+bows_url = "https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBM-ML321EN-SkillsNetwork/labs/datasets/courses_bows.csv"
+bows_df = pd.read_csv(bows_url)
+bows_df = bows_df[['doc_id', 'token', 'bow']]
+bows_df.head(10)
+# Load the course dataframe
+course_url = "https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBM-ML321EN-SkillsNetwork/labs/datasets/course_processed.csv"
+course_df = pd.read_csv(course_url)
+course_df.head(10)
+course_df[course_df['COURSE_ID'] == 'ML0101ENv3']
+ml_course = bows_df[bows_df['doc_id'] == 'ML0101ENv3']
+ml_course
+ml_courseT = ml_course.pivot(index=['doc_id'], columns='token').reset_index(level=[0])
+ml_courseT
+def pivot_two_bows(basedoc, comparedoc):
+    base = basedoc.copy()
+    base['type'] = 'base'
+    compare = comparedoc.copy()
+    compare['type'] = 'compare'
+    # Append the two token sets vertically
+    join = pd.concat([base, compare])
+    # Pivot the two joined courses
+    joinT = join.pivot(index=['doc_id', 'type'], columns='token').fillna(0).reset_index(level=[0, 1])
+    # Assign columns
+    joinT.columns = ['doc_id', 'type'] + [t[1] for t in joinT.columns][2:]
+    return joinT
+course1 = bows_df[bows_df['doc_id'] == 'ML0151EN']
+course2 = bows_df[bows_df['doc_id'] == 'ML0101ENv3']
+bow_vectors = pivot_two_bows(course1, course2)
+bow_vectors
+similarity = 1 - cosine(bow_vectors.iloc[0, 2:], bow_vectors.iloc[1, 2:])
+similarity
+course_df[course_df['COURSE_ID'] == 'ML0101ENv3']
+# WRITE YOUR CODE HERE
+
+## For each course other than ML0101ENv3, use pivot_course_rows to convert it with course ML0101ENv3 into horizontal two BoW feature vectors
+## Then use the cosine method to calculate the similarity
+## Report all courses with similarities larger than a specific threshold (such as 0.5)
+threshold = 0.5
+courses = course_df['COURSE_ID'].unique()
+course_ML0101ENv3 = bows_df[bows_df['doc_id'] == 'ML0101ENv3']
+for course_id in np.delete(courses, np.where(courses == 'ML0101ENv3')):
+    course = bows_df[bows_df['doc_id'] == course_id]
+    bow_vectors = pivot_two_bows(course, course_ML0101ENv3)
+    similarity = 1 - cosine(bow_vectors.iloc[0, 2:], bow_vectors.iloc[1, 2:])
+    if similarity >= threshold:
+        print(course_id)
+
+
+
+
+
+

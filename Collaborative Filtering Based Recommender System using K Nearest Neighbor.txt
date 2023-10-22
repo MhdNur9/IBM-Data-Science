@@ -1,0 +1,80 @@
+import numpy as np
+import math
+# An example similarity array stores the similarity of user2, user3, user4, and user5 to user6
+knn_sims = np.array([0.8, 0.92, 0.75, 0.83])
+# 2.0 means audit and 3.0 means complete the course
+knn_ratings = np.array([3.0, 3.0, 2.0, 3.0]) 
+r_u6_ml =  np.dot(knn_sims, knn_ratings)/ sum(knn_sims)
+r_u6_ml
+true_rating = 3.0
+rmse = math.sqrt(true_rating - r_u6_ml) ** 2
+rmse
+import pandas as pd
+rating_url = "https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBM-ML321EN-SkillsNetwork/labs/datasets/ratings.csv"
+rating_df = pd.read_csv(rating_url)
+rating_df.head()
+rating_df.shape
+rating_sparse_df = rating_df.pivot(index='user', columns='item', values='rating').fillna(0).reset_index().rename_axis(index=None, columns=None)
+rating_sparse_df.head()
+rating_sparse_df.shape
+!pip install scikit-surprise
+from surprise import KNNBasic
+from surprise import Dataset, Reader
+from surprise.model_selection import train_test_split
+from surprise import accuracy
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
+# Load the movielens-100k dataset (download it if needed),
+data = Dataset.load_builtin('ml-100k', prompt=False)
+
+# sample random trainset and testset
+# test set is made of 25% of the ratings.
+trainset, testset = train_test_split(data, test_size=.25)
+
+# We'll use the famous KNNBasic algorithm.
+algo = KNNBasic()
+
+# Train the algorithm on the trainset, and predict ratings for the testset
+algo.fit(trainset)
+predictions = algo.test(testset)
+
+# Then compute RMSE
+accuracy.rmse(predictions)
+rating_df.to_csv("course_ratings.csv", index=False)
+# Read the course rating dataset with columns user item rating
+reader = Reader(
+        line_format='user item rating', sep=',', skip_lines=1, rating_scale=(2, 3))
+
+course_dataset = Dataset.load_from_file("course_ratings.csv", reader=reader)
+trainset, testset = train_test_split(course_dataset, test_size=.3)
+print(f"Total {trainset.n_users} users and {trainset.n_items} items in the trainingset")
+rating_df
+## WRITE YOUR CODE HERE:
+
+
+# - Define a KNNBasic() model
+# Note there are some arguments such as:
+# max_k and min_k, representing the max and min number of neighors for rating estimations
+# sim_option, representing similarity measurement such as cosine and whether you want it to be user_based or items_based 
+# e.g., sim_option = {
+#        'name': 'cosine', 'user_based': False,
+#    }
+#
+# more KNN model hyperparamets can be found here:
+# https://surprise.readthedocs.io/en/stable/knn_inspired.html
+# 
+# You may try different hyperparamet combinations to see which one has the best performance
+
+
+# - Train the KNNBasic model on the trainset, and predict ratings for the testset
+
+# - Then compute RMSE
+
+algo = KNNBasic()
+
+# Train the algorithm on the trainset, and predict ratings for the testset
+algo.fit(trainset)
+predictions = algo.test(testset)
+
+# Then compute RMSE
+accuracy.rmse(predictions)

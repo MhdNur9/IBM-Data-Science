@@ -1,0 +1,81 @@
+!pip install seaborn==0.11.1
+!pip install wordcloud==1.8.1
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
+
+%matplotlib inline
+# also set a random state
+rs = 123
+# Point to the datasets stored on the cloud
+course_genre_url = "https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBM-ML321EN-SkillsNetwork/labs/datasets/course_genre.csv"
+ratings_url = "https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBM-ML321EN-SkillsNetwork/labs/datasets/ratings.csv"
+course_df = pd.read_csv(course_genre_url)
+ratings_df = pd.read_csv(ratings_url)
+
+course_df.columns
+
+course_df.shape[0]
+course_df.head()
+course_df.dtypes
+course_df.iloc[1, ]
+titles = " ".join(title for title in course_df['TITLE'].astype(str))
+titles
+# English Stopwords
+stopwords = set(STOPWORDS)
+stopwords.update(["getting started", "using", "enabling", "template", "university", "end", "introduction", "basic"])
+wordcloud = WordCloud(stopwords=stopwords, background_color="white", width=800, height=400)
+wordcloud.generate(titles)
+plt.axis("off")
+plt.figure(figsize=(40,20))
+plt.tight_layout(pad=0)
+plt.imshow(wordcloud, interpolation='bilinear')
+plt.show()
+# WRITE YOUR CODE HERE
+course_ml_df = course_df[course_df['MachineLearning'] == 1]
+course_ml_df
+# WRITE YOUR CODE HERE
+course_ml_bd_df = course_df.loc[(course_df['MachineLearning'] == 1) & (course_df['BigData'] == 1)]
+course_ml_bd_df
+genres = course_df.columns[2:]
+genres
+## WRITE YOUR CODE HERE
+course_df.sum()
+# WRITE YOUR CODE HERE
+x = pd.DataFrame(course_df.sum()).iloc[2:, : ].reset_index().rename(columns={'index': 'Skills', 0: 'count'}).sort_values(by='count', ascending=False)
+x
+
+sns.barplot(data=x, x="Skills", y="count")
+plt.xticks(rotation=90)
+plt.show()
+ratings_df.head()
+ratings_df['rating'].unique()
+ratings_df['rating'].describe()
+ratings_df.shape[0]
+# WRITE YOUR CODE HERE
+user_count_df = ratings_df.groupby('user').size()
+user_count_df
+## WRITE YOUR CODE HERE
+user_count_df.describe()
+
+
+# WRITE YOUR CODE HERE
+user_count_df.hist()
+# WRITE YOUR CODE HERE
+item_count_df = ratings_df.groupby('item').size()
+item_count_df
+item_count_df.sort_values()[-20:]
+# WRITE YOUR CODE HERE
+course_count_df = pd.DataFrame(item_count_df.sort_values()[-20:]).reset_index().rename(columns={'item': 'COURSE_ID', 0: 'count'})
+course_count_df
+pd.merge(course_count_df, course_df[['COURSE_ID','TITLE']],on='COURSE_ID', how='left')
+# Get the total course enrollments again
+total = ratings_df.shape[0]
+total
+# WRITE YOUR CODE HERE
+top = course_count_df['count'].sum()
+print(f"Percentage of the top course enrollments {round((top * 100)/total, 2)}%")
+
+
